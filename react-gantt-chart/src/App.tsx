@@ -169,6 +169,7 @@ function App() {
   const [timeScale, setTimeScale] = useState<TimeScale>('weeks');
   const [columnWidth, setColumnWidth] = useState<number>(100);
   const [projectColumnWidth, setProjectColumnWidth] = useState<number>(200);
+  const [fontSize, setFontSize] = useState<number>(12);
 
   const addProject = (project: Omit<Project, 'id'>) => {
     const newProject: Project = {
@@ -188,6 +189,13 @@ function App() {
     setProjects(projects.filter(project => project.id !== id));
   };
 
+  const reorderProjects = (startIndex: number, endIndex: number) => {
+    const result = Array.from(projects);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    setProjects(result);
+  };
+
   const exportToJSON = () => {
     const exportData = {
       projects: projects.map(project => ({
@@ -198,7 +206,8 @@ function App() {
       settings: {
         timeScale,
         columnWidth,
-        projectColumnWidth
+        projectColumnWidth,
+        fontSize
       },
       exportedAt: new Date().toISOString()
     };
@@ -249,6 +258,9 @@ function App() {
           if (importData.settings.projectColumnWidth) {
             setProjectColumnWidth(importData.settings.projectColumnWidth);
           }
+          if (importData.settings.fontSize) {
+            setFontSize(importData.settings.fontSize);
+          }
         }
         
         alert('Projects imported successfully!');
@@ -270,7 +282,7 @@ function App() {
   return (
     <AppContainer>
       <Header>
-        <Title>Ant's Chart Tool</Title>
+        <Title>Project Timelines</Title>
       </Header>
       
       <MainContent>
@@ -279,12 +291,14 @@ function App() {
           onAddProject={addProject}
           onUpdateProject={updateProject}
           onDeleteProject={deleteProject}
+          onReorderProjects={reorderProjects}
         />
         <GanttChart
           projects={projects}
           timeScale={timeScale}
           columnWidth={columnWidth}
           projectColumnWidth={projectColumnWidth}
+          fontSize={fontSize}
         />
       </MainContent>
       
@@ -326,6 +340,18 @@ function App() {
             onChange={(e) => setProjectColumnWidth(Number(e.target.value))}
           />
           <span>{projectColumnWidth}px</span>
+        </ColumnWidthControl>
+        
+        <ColumnWidthControl>
+          <span>Bar Font Size:</span>
+          <WidthSlider
+            type="range"
+            min="8"
+            max="20"
+            value={fontSize}
+            onChange={(e) => setFontSize(Number(e.target.value))}
+          />
+          <span>{fontSize}px</span>
         </ColumnWidthControl>
         
         <ColumnWidthControl>

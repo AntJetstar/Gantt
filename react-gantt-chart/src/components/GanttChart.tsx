@@ -112,7 +112,8 @@ const GanttBar = styled.div<{
   color: string; 
   left: number; 
   width: number; 
-  cellWidth: number 
+  cellWidth: number;
+  fontSize: number;
 }>`
   position: absolute;
   left: ${props => props.left * props.cellWidth}px;
@@ -124,7 +125,7 @@ const GanttBar = styled.div<{
   align-items: center;
   padding: 0 8px;
   color: white;
-  font-size: 12px;
+  font-size: ${props => props.fontSize}px;
   font-weight: 500;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
@@ -150,9 +151,10 @@ interface GanttChartProps {
   timeScale: TimeScale;
   columnWidth: number;
   projectColumnWidth: number;
+  fontSize: number;
 }
 
-export default function GanttChart({ projects, timeScale, columnWidth, projectColumnWidth }: GanttChartProps) {
+export default function GanttChart({ projects, timeScale, columnWidth, projectColumnWidth, fontSize }: GanttChartProps) {
   const { timeline, cellWidth, startDate } = useMemo(() => {
     if (projects.length === 0) {
       return { timeline: [], cellWidth: columnWidth, startDate: new Date() };
@@ -350,6 +352,7 @@ export default function GanttChart({ projects, timeScale, columnWidth, projectCo
                   left={left}
                   width={width}
                   cellWidth={cellWidth}
+                  fontSize={fontSize}
                   title={`${project.name} (${project.airport})\n${format(project.startDate, 'MMM dd, yyyy')} - ${format(project.endDate, 'MMM dd, yyyy')}`}
                 >
                   {width * cellWidth > 100 ? project.name : ''}

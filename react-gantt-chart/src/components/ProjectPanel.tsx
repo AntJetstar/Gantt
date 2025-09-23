@@ -3,6 +3,22 @@ import styled from 'styled-components';
 import { Project } from '../types';
 import { format } from 'date-fns';
 
+// Predefined color palette for projects
+const DEFAULT_COLORS = [
+  '#007bff', // Blue
+  '#28a745', // Green
+  '#dc3545', // Red
+  '#ffc107', // Yellow
+  '#6f42c1', // Purple
+  '#fd7e14', // Orange
+  '#20c997', // Teal
+  '#e83e8c', // Pink
+  '#6c757d', // Gray
+  '#17a2b8', // Cyan
+  '#343a40', // Dark
+  '#f8f9fa', // Light
+];
+
 const PanelContainer = styled.div`
   width: 400px;
   background: white;
@@ -52,17 +68,39 @@ const ProjectsList = styled.div`
   padding: 16px;
 `;
 
-const ProjectItem = styled.div`
+const ProjectItem = styled.div<{ isDragging?: boolean; isDragOver?: boolean }>`
   background: white;
   border: 1px solid #e9ecef;
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s;
+  transition: all 0.2s;
+  cursor: move;
+  opacity: ${props => props.isDragging ? 0.5 : 1};
+  transform: ${props => props.isDragOver ? 'translateY(-2px)' : 'translateY(0)'};
+  border-color: ${props => props.isDragOver ? '#007bff' : '#e9ecef'};
 
   &:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+`;
+
+const DragHandle = styled.div`
+  display: flex;
+  align-items: center;
+  color: #6c757d;
+  font-size: 16px;
+  margin-right: 8px;
+  cursor: grab;
+  padding: 2px;
+  
+  &:active {
+    cursor: grabbing;
+  }
+  
+  &:hover {
+    color: #495057;
   }
 `;
 
@@ -71,6 +109,12 @@ const ProjectHeader = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 8px;
+`;
+
+const ProjectTitleRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
 `;
 
 const ProjectName = styled.h3`
@@ -201,6 +245,48 @@ const ColorInput = styled.input`
   cursor: pointer;
 `;
 
+const ColorPalette = styled.div`
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+`;
+
+const ColorSwatch = styled.button<{ color: string; selected?: boolean }>`
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: ${props => props.selected ? '3px solid #007bff' : '2px solid #e9ecef'};
+  background-color: ${props => props.color};
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+
+  ${props => props.selected && `
+    &::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+    }
+  `}
+`;
+
 const ButtonGroup = styled.div`
   display: flex;
   gap: 12px;
@@ -231,16 +317,20 @@ interface ProjectPanelProps {
   onAddProject: (project: Omit<Project, 'id'>) => void;
   onUpdateProject: (id: string, updates: Partial<Project>) => void;
   onDeleteProject: (id: string) => void;
+  onReorderProjects: (startIndex: number, endIndex: number) => void;
 }
 
 export default function ProjectPanel({ 
   projects, 
   onAddProject, 
   onUpdateProject, 
-  onDeleteProject 
+  onDeleteProject,
+  onReorderProjects
 }: ProjectPanelProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     airport: '',
@@ -297,6 +387,38 @@ export default function ProjectPanel({
     handleCloseModal();
   };
 
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex !== null && draggedIndex !== dropIndex) {
+      onReorderProjects(draggedIndex, dropIndex);
+    }
+    
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   return (
     <PanelContainer>
       <PanelHeader>
@@ -307,12 +429,25 @@ export default function ProjectPanel({
       </PanelHeader>
       
       <ProjectsList>
-        {projects.map(project => (
-          <ProjectItem key={project.id}>
+        {projects.map((project, index) => (
+          <ProjectItem 
+            key={project.id}
+            draggable
+            isDragging={draggedIndex === index}
+            isDragOver={dragOverIndex === index}
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
+          >
             <ProjectHeader>
-              <ProjectName onClick={() => handleOpenModal(project)}>
-                {project.name}
-              </ProjectName>
+              <ProjectTitleRow>
+                <DragHandle>⋮⋮</DragHandle>
+                <ProjectName onClick={() => handleOpenModal(project)}>
+                  {project.name}
+                </ProjectName>
+              </ProjectTitleRow>
               <ColorDot color={project.color} />
               <DeleteButton onClick={() => onDeleteProject(project.id)}>
                 ×
@@ -398,6 +533,18 @@ export default function ProjectPanel({
                 value={formData.color}
                 onChange={(e) => setFormData({...formData, color: e.target.value})}
               />
+              <ColorPalette>
+                {DEFAULT_COLORS.map((color) => (
+                  <ColorSwatch
+                    key={color}
+                    type="button"
+                    color={color}
+                    selected={formData.color === color}
+                    onClick={() => setFormData({...formData, color})}
+                    title={`Select ${color}`}
+                  />
+                ))}
+              </ColorPalette>
             </FormGroup>
             
             <ButtonGroup>
