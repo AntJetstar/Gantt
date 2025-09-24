@@ -39,25 +39,23 @@ const TimelineHeader = styled.div`
   top: 0;
   z-index: 10;
   background: white;
-  border-bottom: 2px solid #dee2e6;
 `;
 
 const TimelineRow = styled.div`
   display: flex;
-  border-bottom: 1px solid #e9ecef;
 `;
 
-const TimelineCell = styled.div<{ width: number; isHeader?: boolean }>`
+const TimelineCell = styled.div<{ width: number; isHeader?: boolean; showVerticalLines?: boolean }>`
   width: ${props => props.width}px;
   min-width: ${props => props.width}px;
   height: ${props => props.isHeader ? '40px' : '32px'};
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #e9ecef;
+  ${props => props.showVerticalLines ? 'border-right: 1px solid #e9ecef;' : ''}
   font-size: ${props => props.isHeader ? '14px' : '12px'};
   font-weight: ${props => props.isHeader ? '600' : '400'};
-  background: ${props => props.isHeader ? '#f8f9fa' : 'white'};
+  background: white;
   color: ${props => props.isHeader ? '#495057' : '#6c757d'};
 `;
 
@@ -65,11 +63,10 @@ const ChartBody = styled.div`
   flex: 1;
 `;
 
-const ProjectRow = styled.div`
+const ProjectRow = styled.div<{ rowHeight: number }>`
   display: flex;
   align-items: center;
-  height: 50px;
-  border-bottom: 1px solid #f8f9fa;
+  height: ${props => props.rowHeight}px;
   
   &:hover {
     background: #f8f9fa;
@@ -82,17 +79,47 @@ const TimelineContainer = styled.div`
   flex: 1;
 `;
 
-const AirportLabel = styled.div`
+const VerticalLinesBackground = styled.div<{ showVerticalLines: boolean; cellWidth: number; timelineLength: number }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  ${props => props.showVerticalLines ? `
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent,
+      transparent ${props.cellWidth - 1}px,
+      #e9ecef ${props.cellWidth - 1}px,
+      #e9ecef ${props.cellWidth}px
+    );
+    width: ${props.timelineLength * props.cellWidth}px;
+  ` : ''}
+`;
+
+const AirportLabel = styled.div<{ color: string }>`
   width: 80px;
   min-width: 80px;
   padding: 0 12px;
   background: white;
-  border-right: 1px solid #dee2e6;
   font-weight: 500;
-  color: #495057;
   display: flex;
   align-items: center;
+  justify-content: center;
   font-size: 14px;
+`;
+
+const AirportTag = styled.div<{ color: string }>`
+  background: ${props => props.color};
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 40px;
 `;
 
 const ProjectLabel = styled.div<{ width: number }>`
@@ -100,7 +127,6 @@ const ProjectLabel = styled.div<{ width: number }>`
   min-width: ${props => props.width}px;
   padding: 0 16px;
   background: white;
-  border-right: 2px solid #dee2e6;
   font-weight: 500;
   color: #495057;
   display: flex;
@@ -113,13 +139,14 @@ const GanttBar = styled.div<{
   width: number; 
   cellWidth: number;
   fontSize: number;
+  rowHeight: number;
 }>`
   position: absolute;
   left: ${props => props.left * props.cellWidth}px;
   width: ${props => props.width * props.cellWidth}px;
-  height: 24px;
+  height: ${props => Math.max(20, props.rowHeight * 0.6)}px;
   background: ${props => props.color};
-  border-radius: 12px;
+  border-radius: ${props => Math.min(12, props.rowHeight * 0.24)}px;
   display: flex;
   align-items: center;
   padding: 0 8px;
@@ -129,6 +156,7 @@ const GanttBar = styled.div<{
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
   cursor: pointer;
+  z-index: 2;
   
   &:hover {
     transform: translateY(-1px);
@@ -151,9 +179,11 @@ interface GanttChartProps {
   columnWidth: number;
   projectColumnWidth: number;
   fontSize: number;
+  rowHeight: number;
+  showVerticalLines: boolean;
 }
 
-export default function GanttChart({ projects, timeScale, columnWidth, projectColumnWidth, fontSize }: GanttChartProps) {
+export default function GanttChart({ projects, timeScale, columnWidth, projectColumnWidth, fontSize, rowHeight, showVerticalLines }: GanttChartProps) {
   const { timeline, cellWidth, startDate } = useMemo(() => {
     if (projects.length === 0) {
       return { timeline: [], cellWidth: columnWidth, startDate: new Date() };
@@ -312,20 +342,28 @@ export default function GanttChart({ projects, timeScale, columnWidth, projectCo
       <TimelineHeader>
         <TimelineRow>
           <TimelineCell width={80} isHeader>
-            Airport
           </TimelineCell>
           <TimelineCell width={projectColumnWidth} isHeader>
-            Project
           </TimelineCell>
-          {timeline.map((item, index) => (
-            <TimelineCell 
-              key={index} 
-              width={cellWidth} 
-              isHeader
-            >
-              {item.label}
-            </TimelineCell>
-          ))}
+          <div style={{ position: 'relative', display: 'flex', flex: 1 }}>
+            {showVerticalLines && (
+              <VerticalLinesBackground 
+                showVerticalLines={showVerticalLines}
+                cellWidth={cellWidth}
+                timelineLength={timeline.length}
+              />
+            )}
+            {timeline.map((item, index) => (
+              <TimelineCell 
+                key={index} 
+                width={cellWidth} 
+                isHeader 
+                showVerticalLines={false}
+              >
+                {item.label}
+              </TimelineCell>
+            ))}
+          </div>
         </TimelineRow>
       </TimelineHeader>
 
@@ -334,15 +372,25 @@ export default function GanttChart({ projects, timeScale, columnWidth, projectCo
           const { left, width } = calculateBarPosition(project);
           
           return (
-            <ProjectRow key={project.id}>
-              <AirportLabel>{project.airport}</AirportLabel>
+            <ProjectRow key={project.id} rowHeight={rowHeight}>
+              <AirportLabel color={project.color}>
+                <AirportTag color={project.color}>
+                  {project.airport}
+                </AirportTag>
+              </AirportLabel>
               <ProjectLabel width={projectColumnWidth}>{project.name}</ProjectLabel>
               
               <TimelineContainer>
+                <VerticalLinesBackground 
+                  showVerticalLines={showVerticalLines}
+                  cellWidth={cellWidth}
+                  timelineLength={timeline.length}
+                />
                 {timeline.map((_, index) => (
                   <TimelineCell 
                     key={index} 
                     width={cellWidth}
+                    showVerticalLines={false}
                   />
                 ))}
                 
@@ -352,6 +400,7 @@ export default function GanttChart({ projects, timeScale, columnWidth, projectCo
                   width={width}
                   cellWidth={cellWidth}
                   fontSize={fontSize}
+                  rowHeight={rowHeight}
                   title={`${project.name} (${project.airport})\n${format(project.startDate, 'MMM dd, yyyy')} - ${format(project.endDate, 'MMM dd, yyyy')}`}
                 >
                   {width * cellWidth > 100 ? project.name : ''}

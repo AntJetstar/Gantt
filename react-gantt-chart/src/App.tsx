@@ -9,7 +9,24 @@ const AppContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        <ColumnWidthControl>
+          <span>Row Height:</span>
+          <WidthSlider
+            type="range"
+            min="30"
+            max="80"
+            value={rowHeight}
+            onChange={(e) => setRowHeight(Number(e.target.value))}
+          />
+          <span>{rowHeight}px</span>
+        </ColumnWidthControl>
+        
+        <ColumnWidthControl>
+          <span>Vertical Lines:</span>
+          <ActionButton onClick={() => setShowVerticalLines(!showVerticalLines)}>
+            {showVerticalLines ? '✓ Show' : '✗ Hide'}
+          </ActionButton>
+        </ColumnWidthControl>ly: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   background-color: #f8f9fa;
 `;
 
@@ -170,6 +187,8 @@ function App() {
   const [columnWidth, setColumnWidth] = useState<number>(100);
   const [projectColumnWidth, setProjectColumnWidth] = useState<number>(200);
   const [fontSize, setFontSize] = useState<number>(12);
+  const [rowHeight, setRowHeight] = useState<number>(50);
+  const [showVerticalLines, setShowVerticalLines] = useState<boolean>(false);
 
   const addProject = (project: Omit<Project, 'id'>) => {
     const newProject: Project = {
@@ -207,7 +226,9 @@ function App() {
         timeScale,
         columnWidth,
         projectColumnWidth,
-        fontSize
+        fontSize,
+        rowHeight,
+        showVerticalLines
       },
       exportedAt: new Date().toISOString()
     };
@@ -261,6 +282,12 @@ function App() {
           if (importData.settings.fontSize) {
             setFontSize(importData.settings.fontSize);
           }
+          if (importData.settings.rowHeight) {
+            setRowHeight(importData.settings.rowHeight);
+          }
+          if (typeof importData.settings.showVerticalLines === 'boolean') {
+            setShowVerticalLines(importData.settings.showVerticalLines);
+          }
         }
         
         alert('Projects imported successfully!');
@@ -299,6 +326,8 @@ function App() {
           columnWidth={columnWidth}
           projectColumnWidth={projectColumnWidth}
           fontSize={fontSize}
+          rowHeight={rowHeight}
+          showVerticalLines={showVerticalLines}
         />
       </MainContent>
       
@@ -355,6 +384,18 @@ function App() {
         </ColumnWidthControl>
         
         <ColumnWidthControl>
+          <span>Row Height:</span>
+          <WidthSlider
+            type="range"
+            min="10"
+            max="80"
+            value={rowHeight}
+            onChange={(e) => setRowHeight(Number(e.target.value))}
+          />
+          <span>{rowHeight}px</span>
+        </ColumnWidthControl>
+        
+        <ColumnWidthControl>
           <span>Time Scale:</span>
           <TimeScaleSelector 
             value={timeScale} 
@@ -366,6 +407,13 @@ function App() {
             <option value="quarters">Quarters</option>
             <option value="years">Years</option>
           </TimeScaleSelector>
+        </ColumnWidthControl>
+        
+        <ColumnWidthControl>
+          <span>Vertical Lines:</span>
+          <ActionButton onClick={() => setShowVerticalLines(!showVerticalLines)}>
+            {showVerticalLines ? '✓ Show' : '✗ Hide'}
+          </ActionButton>
         </ColumnWidthControl>
       </BottomSidebar>
     </AppContainer>
