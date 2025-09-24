@@ -32,6 +32,26 @@ const ChartContainer = styled.div`
   flex-direction: column;
   width: 100%;
   min-height: 0;
+  position: relative;
+`;
+
+const ChartBackgroundGrid = styled.div<{ showVerticalLines: boolean; cellWidth: number; timelineLength: number; leftOffset: number }>`
+  position: absolute;
+  top: 0;
+  left: ${props => props.leftOffset}px;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+  ${props => props.showVerticalLines ? `
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent,
+      transparent ${props.cellWidth - 1}px,
+      #e9ecef ${props.cellWidth - 1}px,
+      #e9ecef ${props.cellWidth}px
+    );
+  ` : ''}
 `;
 
 const TimelineHeader = styled.div`
@@ -39,6 +59,7 @@ const TimelineHeader = styled.div`
   top: 0;
   z-index: 10;
   background: white;
+  position: relative;
 `;
 
 const TimelineRow = styled.div`
@@ -52,10 +73,9 @@ const TimelineCell = styled.div<{ width: number; isHeader?: boolean; showVertica
   display: flex;
   align-items: center;
   justify-content: center;
-  ${props => props.showVerticalLines ? 'border-right: 1px solid #e9ecef;' : ''}
   font-size: ${props => props.isHeader ? '14px' : '12px'};
   font-weight: ${props => props.isHeader ? '600' : '400'};
-  background: white;
+  background: transparent;
   color: ${props => props.isHeader ? '#495057' : '#6c757d'};
 `;
 
@@ -67,6 +87,8 @@ const ProjectRow = styled.div<{ rowHeight: number }>`
   display: flex;
   align-items: center;
   height: ${props => props.rowHeight}px;
+  background: white;
+  position: relative;
   
   &:hover {
     background: #f8f9fa;
@@ -77,27 +99,10 @@ const TimelineContainer = styled.div`
   display: flex;
   position: relative;
   flex: 1;
+  background: transparent;
 `;
 
-const VerticalLinesBackground = styled.div<{ showVerticalLines: boolean; cellWidth: number; timelineLength: number }>`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 1;
-  ${props => props.showVerticalLines ? `
-    background-image: repeating-linear-gradient(
-      to right,
-      transparent,
-      transparent ${props.cellWidth - 1}px,
-      #e9ecef ${props.cellWidth - 1}px,
-      #e9ecef ${props.cellWidth}px
-    );
-    width: ${props.timelineLength * props.cellWidth}px;
-  ` : ''}
-`;
+
 
 const AirportLabel = styled.div<{ color: string }>`
   width: 80px;
@@ -156,7 +161,7 @@ const GanttBar = styled.div<{
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
   cursor: pointer;
-  z-index: 2;
+  z-index: 3;
   
   &:hover {
     transform: translateY(-1px);
@@ -337,33 +342,32 @@ export default function GanttChart({ projects, timeScale, columnWidth, projectCo
     );
   }
 
+  const leftOffset = 80 + projectColumnWidth; // Width of airport and project columns
+
   return (
     <ChartContainer>
+      <ChartBackgroundGrid 
+        showVerticalLines={showVerticalLines}
+        cellWidth={cellWidth}
+        timelineLength={timeline.length}
+        leftOffset={leftOffset}
+      />
       <TimelineHeader>
         <TimelineRow>
           <TimelineCell width={80} isHeader>
           </TimelineCell>
           <TimelineCell width={projectColumnWidth} isHeader>
           </TimelineCell>
-          <div style={{ position: 'relative', display: 'flex', flex: 1 }}>
-            {showVerticalLines && (
-              <VerticalLinesBackground 
-                showVerticalLines={showVerticalLines}
-                cellWidth={cellWidth}
-                timelineLength={timeline.length}
-              />
-            )}
-            {timeline.map((item, index) => (
-              <TimelineCell 
-                key={index} 
-                width={cellWidth} 
-                isHeader 
-                showVerticalLines={false}
-              >
-                {item.label}
-              </TimelineCell>
-            ))}
-          </div>
+          {timeline.map((item, index) => (
+            <TimelineCell 
+              key={index} 
+              width={cellWidth} 
+              isHeader 
+              showVerticalLines={false}
+            >
+              {item.label}
+            </TimelineCell>
+          ))}
         </TimelineRow>
       </TimelineHeader>
 
@@ -381,11 +385,6 @@ export default function GanttChart({ projects, timeScale, columnWidth, projectCo
               <ProjectLabel width={projectColumnWidth}>{project.name}</ProjectLabel>
               
               <TimelineContainer>
-                <VerticalLinesBackground 
-                  showVerticalLines={showVerticalLines}
-                  cellWidth={cellWidth}
-                  timelineLength={timeline.length}
-                />
                 {timeline.map((_, index) => (
                   <TimelineCell 
                     key={index} 
