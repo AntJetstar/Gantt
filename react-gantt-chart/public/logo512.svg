@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#007bff" rx="64"/>
+  <!-- Aircraft body -->
+  <path d="M128 256 L384 256 L352 224 L352 192 L320 192 L320 224 L160 224 L160 192 L128 192 L128 224 Z" fill="white" stroke="white" stroke-width="4"/>
+  <!-- Wings -->
+  <path d="M96 240 L160 240 L160 272 L96 272 Z" fill="white"/>
+  <path d="M352 240 L416 240 L416 272 L352 272 Z" fill="white"/>
+  <!-- Tail -->
+  <path d="M384 224 L448 192 L448 224 L416 256 L416 288 L448 288 L448 320 L384 288 Z" fill="white"/>
+  <!-- Cockpit -->
+  <circle cx="128" cy="256" r="24" fill="#007bff" stroke="white" stroke-width="4"/>
+  <!-- Propeller -->
+  <path d="M112 240 L112 272 M128 224 L128 288" stroke="white" stroke-width="4"/>
+  <!-- Engine details -->
+  <rect x="200" y="248" width="120" height="16" fill="#e9ecef" rx="8"/>
+  <rect x="220" y="244" width="80" height="24" fill="#dee2e6" rx="12"/>
+</svg>
